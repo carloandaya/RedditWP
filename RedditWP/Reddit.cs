@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Text;
@@ -75,5 +76,72 @@ namespace RedditWP
         {
             throw new NotImplementedException();
         }
+
+        public AuthenticatedUser GetMe()
+        {
+            throw new NotImplementedException();
+        }
+
+        public Subreddit GetSubreddit(string name)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void ComposePrivateMessage(string subject, string body, string to)
+        {
+            throw new NotImplementedException();
+        }
+
+        public AuthenticatedUser RegisterAccount(string userName, string passwd, string email = "")
+        {
+            throw new NotImplementedException();
+        }
+
+        #region Helpers
+        // Will probably need to do a lot of work here to convert to WP8 calls
+
+
+        private static DateTime lastRequest = DateTime.MinValue;
+        protected internal HttpWebRequest CreateRequest(string url, string method, bool prependDomain = true)
+        {
+            throw new NotImplementedException();
+        }
+
+        protected internal HttpWebRequest CreateGet(string url, bool prependDomain = true)
+        {
+            return CreateRequest(url, "GET", prependDomain);
+        }
+
+        protected internal HttpWebRequest CreatePost(string url, bool prependDomain = true)
+        {
+            var request = CreateRequest(url, "POST", prependDomain);
+            request.ContentType = "application/x-www-form-urlencoded";
+            return request;
+        }
+
+        protected internal string GetReponseString(Stream stream)
+        {
+            throw new NotImplementedException();
+        }
+
+        protected internal Thing GetThing(string url, bool prependDomain = true)
+        {
+            throw new NotImplementedException();
+        }
+
+        protected internal void WritePostBody(Stream stream, object data, params string[] additionalFields)
+        {
+            throw new NotImplementedException();
+        }
+
+        protected internal static DateTime UnixTimeStampToDateTime(double unixTimeStamp)
+        {
+            // Unix timestamp is seconds past epoch
+            var dtDateTime = new DateTime(1970, 1, 1, 0, 0, 0, 0);
+            dtDateTime = dtDateTime.AddSeconds(unixTimeStamp).ToLocalTime();
+            return dtDateTime;
+        }
+
+        #endregion
     }
 }
