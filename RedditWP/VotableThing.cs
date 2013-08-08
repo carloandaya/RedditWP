@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using System.IO;
 
 namespace RedditWP
 {
@@ -58,7 +59,25 @@ namespace RedditWP
         private void UpvoteRequest(IAsyncResult ar)
         {
             HttpWebRequest request = (HttpWebRequest)ar.AsyncState;
-            throw new NotImplementedException();
+
+            Stream stream = request.EndGetRequestStream(ar);
+
+            Reddit.WritePostBody(stream, new
+            {
+                dir = 1,
+                id = FullName,
+                uh = Reddit.User.Modhash
+            });            
+
+            request.BeginGetResponse(new AsyncCallback(UpvoteResponse), request);
+        }
+
+        private void UpvoteResponse(IAsyncResult ar)
+        {
+            HttpWebRequest request = (HttpWebRequest)ar.AsyncState;
+            HttpWebResponse response = (HttpWebResponse)request.EndGetResponse(ar);
+            var data = Reddit.GetReponseString(response.GetResponseStream());
+            Liked = true;
         }
 
         public void Downvote()

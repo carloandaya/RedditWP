@@ -8,5 +8,7 @@ namespace RedditWP
 {
     public class AuthenticatedUser
     {
+
+        public string Modhash { get; set; }
     }
 }
