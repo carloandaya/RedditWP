@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
@@ -56,6 +57,7 @@ namespace RedditWP
 
         private void UpvoteRequest(IAsyncResult ar)
         {
+            HttpWebRequest request = (HttpWebRequest)ar.AsyncState;
             throw new NotImplementedException();
         }
 
