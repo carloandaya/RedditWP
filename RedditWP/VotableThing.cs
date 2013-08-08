@@ -39,6 +39,30 @@ namespace RedditWP
     
         [JsonProperty("saved")]
         public int Saved { get; set; }
-    
+
+        /// <summary>
+        /// True if the logged in user has upvoted this.
+        /// False if they have not. 
+        /// Null if they have not cast a vote.
+        /// </summary>
+        public bool? Liked { get; set; }
+
+        public void Upvote()
+        {
+            var request = Reddit.CreatePost(VoteUrl);
+            // TODO: Write a proper asynchronous call
+            request.BeginGetRequestStream(new AsyncCallback(UpvoteRequest), request);
+        }
+
+        private void UpvoteRequest(IAsyncResult ar)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void Downvote()
+        {
+            var request = Reddit.CreatePost(VoteUrl);
+            // TODO: Write a proper asynchronous call
+        }
     }
 }
