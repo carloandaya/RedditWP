@@ -119,7 +119,7 @@ namespace RedditWP
             return request;
         }
 
-        protected internal string GetReponseString(Stream stream)
+        protected internal string GetResponseString(Stream stream)
         {
             throw new NotImplementedException();
         }

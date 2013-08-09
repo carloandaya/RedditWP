@@ -23,6 +23,8 @@ namespace RedditWP
         private const string SaveUrl = "/api/save";
         private const string UnsaveUrl = "/api/unsave";
 
+        private VoteType voteType;
+
         [JsonIgnore]
         private Reddit Reddit { get; set; }
 
@@ -40,7 +42,7 @@ namespace RedditWP
         public int Upvotes { get; set; }
     
         [JsonProperty("saved")]
-        public int Saved { get; set; }
+        public bool Saved { get; set; }
 
         /// <summary>
         /// True if the logged in user has upvoted this.
@@ -52,7 +54,6 @@ namespace RedditWP
         public void Upvote()
         {
             var request = Reddit.CreatePost(VoteUrl);
-            // TODO: Write a proper asynchronous call
             request.BeginGetRequestStream(new AsyncCallback(UpvoteRequest), request);
         }
 
@@ -76,14 +77,146 @@ namespace RedditWP
         {
             HttpWebRequest request = (HttpWebRequest)ar.AsyncState;
             HttpWebResponse response = (HttpWebResponse)request.EndGetResponse(ar);
-            var data = Reddit.GetReponseString(response.GetResponseStream());
+            var data = Reddit.GetResponseString(response.GetResponseStream());
+            // TODO: check the data for success or failure
             Liked = true;
         }
 
         public void Downvote()
         {
             var request = Reddit.CreatePost(VoteUrl);
-            // TODO: Write a proper asynchronous call
+            request.BeginGetRequestStream(new AsyncCallback(DownvoteRequest), request);
+        }
+
+        private void DownvoteRequest(IAsyncResult ar)
+        {
+            HttpWebRequest request = (HttpWebRequest)ar.AsyncState;
+
+            Stream stream = request.EndGetRequestStream(ar);
+
+            Reddit.WritePostBody(stream, new 
+            {
+                dir = -1,
+                id = FullName, 
+                uh = Reddit.User.Modhash
+            });
+
+            request.BeginGetResponse(new AsyncCallback(DownvoteResponse), request);
+        }
+
+        private void DownvoteResponse(IAsyncResult ar)
+        {
+            HttpWebRequest request = (HttpWebRequest)ar.AsyncState;
+            HttpWebResponse response = (HttpWebResponse)request.EndGetResponse(ar);
+            var data = Reddit.GetResponseString(response.GetResponseStream());
+            // TODO: check the data for success or failure
+            Liked = false; 
+        }
+
+        public void Save()
+        {
+            var request = Reddit.CreatePost(SaveUrl);
+            var stream = request.BeginGetRequestStream(new AsyncCallback(SaveRequest), request);
+        }
+
+        private void SaveRequest(IAsyncResult ar)
+        {
+            HttpWebRequest request = (HttpWebRequest)ar.AsyncState;
+            Stream stream = request.EndGetRequestStream(ar);
+            Reddit.WritePostBody(stream, new
+            {
+                id = FullName,
+                uh = Reddit.User.Modhash
+            });
+            request.BeginGetResponse(new AsyncCallback(SaveResponse), request);
+        }
+
+        private void SaveResponse(IAsyncResult ar)
+        {
+            HttpWebRequest request = (HttpWebRequest)ar.AsyncState;
+            HttpWebResponse response = (HttpWebResponse)request.EndGetResponse(ar);
+            var data = Reddit.GetResponseString(response.GetResponseStream());
+            Saved = true;
+        }
+
+        public void Unsave()
+        {
+            var request = Reddit.CreatePost(UnsaveUrl);
+            request.BeginGetRequestStream(new AsyncCallback(UnsaveRequest), request);
+        }
+
+        private void UnsaveRequest(IAsyncResult ar)
+        {
+            HttpWebRequest request = (HttpWebRequest)ar.AsyncState;
+            Stream stream = request.EndGetRequestStream(ar);
+            Reddit.WritePostBody(stream, new
+            {
+                id = FullName,
+                uh = Reddit.User.Modhash
+            });
+            request.BeginGetResponse(new AsyncCallback(UnsaveResponse), request);
+        }
+
+        private void UnsaveResponse(IAsyncResult ar)
+        {
+            HttpWebRequest request = (HttpWebRequest)ar.AsyncState;
+            HttpWebResponse response = (HttpWebResponse)request.EndGetResponse(ar);
+            var data = Reddit.GetResponseString(response.GetResponseStream());
+            Saved = false;
+        }
+
+        public void ClearVote()
+        {
+            var request = Reddit.CreatePost(VoteUrl);
+            request.BeginGetRequestStream(new AsyncCallback(ClearVoteRequest), request);
+        }
+
+        private void ClearVoteRequest(IAsyncResult ar)
+        {
+            HttpWebRequest request = (HttpWebRequest)ar.AsyncState;
+            Stream stream = request.EndGetRequestStream(ar);
+            Reddit.WritePostBody(stream, new 
+            {
+                dir = 0,
+                id = FullName,
+                uh = Reddit.User.Modhash
+            });
+            request.BeginGetResponse(new AsyncCallback(ClearVoteResponse), request);
+        }
+
+        private void ClearVoteResponse(IAsyncResult ar)
+        {
+            HttpWebRequest request = (HttpWebRequest)ar.AsyncState;
+            HttpWebResponse response = (HttpWebResponse)request.EndGetResponse(ar);
+            var data = Reddit.GetResponseString(response.GetResponseStream());            
+        }
+
+        public void Vote(VoteType type)
+        {
+            var request = Reddit.CreatePost(VoteUrl);
+            request.BeginGetRequestStream(new AsyncCallback(VoteRequest), request);            
+            voteType = type;
+        }
+
+        private void VoteRequest(IAsyncResult ar)
+        {
+            HttpWebRequest request = (HttpWebRequest)ar.AsyncState;
+            Stream stream = request.EndGetRequestStream(ar);
+            Reddit.WritePostBody(stream, new
+            {
+                dir = (int)voteType,
+                id = FullName,
+                uh = Reddit.User.Modhash
+            });
+            request.BeginGetResponse(new AsyncCallback(VoteResponse), request);
+        }
+
+        private void VoteResponse(IAsyncResult ar)
+        {
+            HttpWebRequest request = (HttpWebRequest)ar.AsyncState;
+            HttpWebResponse response = (HttpWebResponse)request.EndGetResponse(ar);
+            var data = Reddit.GetResponseString(response.GetResponseStream());
+            Liked = null;
         }
     }
 }
