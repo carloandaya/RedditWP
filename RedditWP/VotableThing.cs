@@ -19,12 +19,20 @@ namespace RedditWP
             Downvote = -1
         }
 
+        /// <summary>
+        /// State information for Vote async call
+        /// </summary>
+        public class VoteState
+        {
+            public HttpWebRequest AsyncRequest { get; set; }
+            public HttpWebResponse AsyncResponse { get; set; }
+            public VoteType VoteType { get; set; }
+        }
+
         private const string VoteUrl = "/api/vote";
         private const string SaveUrl = "/api/save";
         private const string UnsaveUrl = "/api/unsave";
-
-        private VoteType voteType;
-
+        
         [JsonIgnore]
         private Reddit Reddit { get; set; }
 
@@ -193,30 +201,40 @@ namespace RedditWP
 
         public void Vote(VoteType type)
         {
+            VoteState voteState = new VoteState();
             var request = Reddit.CreatePost(VoteUrl);
-            request.BeginGetRequestStream(new AsyncCallback(VoteRequest), request);            
-            voteType = type;
+            voteState.AsyncRequest = request;
+            voteState.VoteType = type;
+            request.BeginGetRequestStream(new AsyncCallback(VoteRequest), voteState);            
         }
 
         private void VoteRequest(IAsyncResult ar)
         {
-            HttpWebRequest request = (HttpWebRequest)ar.AsyncState;
+            // get the state information
+            VoteState voteState = (VoteState)ar.AsyncState;
+            HttpWebRequest request = (HttpWebRequest)voteState.AsyncRequest;
             Stream stream = request.EndGetRequestStream(ar);
             Reddit.WritePostBody(stream, new
             {
-                dir = (int)voteType,
+                dir = (int)voteState.VoteType,
                 id = FullName,
                 uh = Reddit.User.Modhash
             });
-            request.BeginGetResponse(new AsyncCallback(VoteResponse), request);
+            request.BeginGetResponse(new AsyncCallback(VoteResponse), voteState);
         }
 
         private void VoteResponse(IAsyncResult ar)
         {
-            HttpWebRequest request = (HttpWebRequest)ar.AsyncState;
-            HttpWebResponse response = (HttpWebResponse)request.EndGetResponse(ar);
-            var data = Reddit.GetResponseString(response.GetResponseStream());
+            // get the state informatoin
+            VoteState voteState = (VoteState)ar.AsyncState;
+            HttpWebRequest request = (HttpWebRequest)voteState.AsyncRequest;
+
+            // end the async request
+            voteState.AsyncResponse = (HttpWebResponse)request.EndGetResponse(ar);            
+            var data = Reddit.GetResponseString(voteState.AsyncResponse.GetResponseStream());
             Liked = null;
         }
+        
     }
+    
 }

@@ -120,8 +120,10 @@ namespace RedditWP
         }
 
         protected internal string GetResponseString(Stream stream)
-        {
-            throw new NotImplementedException();
+        {            
+            string data = new StreamReader(stream).ReadToEnd();
+            stream.Close();
+            return data;
         }
 
         protected internal Thing GetThing(string url, bool prependDomain = true)
