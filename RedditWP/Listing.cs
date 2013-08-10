@@ -4,6 +4,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Collections;
+using System.Net;
+using Newtonsoft.Json.Linq;
 
 namespace RedditWP
 {
@@ -52,27 +54,73 @@ namespace RedditWP
 
             private void FetchNextPage()
             {
+                var url = Listing.Url;
+                if (After != null)
+                {
+                    if (url.Contains("?"))
+                        url += "&after=" + After;
+                    else
+                        url += "?after=" + After;
+                }
+                
+                var request = Listing.Reddit.CreateGet(url);
+                request.BeginGetResponse(new AsyncCallback(FetchNextPageResponse), request);
+            }
 
+            private void FetchNextPageResponse(IAsyncResult ar)
+            {
+                HttpWebRequest request = (HttpWebRequest)ar.AsyncState;
+                HttpWebResponse response = (HttpWebResponse)request.EndGetResponse(ar);
+                var data = Listing.Reddit.GetResponseString(response.GetResponseStream());
+                var json = JToken.Parse(data);
+                if (json["kind"].ValueOrDefault<string>() != "Listing")
+                    throw new FormatException("Reddit responded with an object that is not a listing.");
+                Parse(json);
+            }
+
+            private void Parse(JToken json)
+            {
+                var children = json["data"]["children"] as JArray;
+                CurrentPage = new Thing[children.Count];
+                for (int i = 0; i < CurrentPage.Length; i++)
+                    CurrentPage[i] = Thing.Parse(Listing.Reddit, children[i]);
+                After = json["data"]["after"].Value<string>();
+                Before = json["data"]["before"].Value<string>();
             }
 
             object IEnumerator.Current
             {
-                get { throw new NotImplementedException(); }
+                get { return this.Current; }
             }
 
             public bool MoveNext()
             {
-                throw new NotImplementedException();
+                if (CurrentPage == null)
+                    FetchNextPage();
+                if (CurrentPageIndex >= CurrentPage.Length)
+                {
+                    if (After == null)
+                        return false;
+                    FetchNextPage();
+                    ResetCurrentPageIndex();
+                }
+                CurrentPageIndex++;
+                return true;
+            }
+
+            private void ResetCurrentPageIndex()
+            {
+                CurrentPageIndex = 0;
             }
 
             public void Reset()
             {
-                throw new NotImplementedException();
+                After = Before = null;
             }
 
             public void Dispose()
             {
-                throw new NotImplementedException();
+                // ...
             }
         }
     }
