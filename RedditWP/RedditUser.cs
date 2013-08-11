@@ -42,7 +42,7 @@ namespace RedditWP
 
         public Listing<Comment> GetComments()
         {
-
+            return new Listing<Comment>(Reddit, string.Format(CommentsUrl, Name));
         }
 
     }

@@ -22,7 +22,7 @@ namespace RedditWP
         /// <summary>
         /// State information for Vote async call
         /// </summary>
-        public class VoteState
+        private class VotableThingState
         {
             public HttpWebRequest AsyncRequest { get; set; }
             public HttpWebResponse AsyncResponse { get; set; }
@@ -201,7 +201,7 @@ namespace RedditWP
 
         public void Vote(VoteType type)
         {
-            VoteState voteState = new VoteState();
+            VotableThingState voteState = new VotableThingState();
             var request = Reddit.CreatePost(VoteUrl);
             voteState.AsyncRequest = request;
             voteState.VoteType = type;
@@ -211,7 +211,7 @@ namespace RedditWP
         private void VoteRequest(IAsyncResult ar)
         {
             // get the state information
-            VoteState voteState = (VoteState)ar.AsyncState;
+            VotableThingState voteState = (VotableThingState)ar.AsyncState;
             HttpWebRequest request = (HttpWebRequest)voteState.AsyncRequest;
             Stream stream = request.EndGetRequestStream(ar);
             Reddit.WritePostBody(stream, new
@@ -226,7 +226,7 @@ namespace RedditWP
         private void VoteResponse(IAsyncResult ar)
         {
             // get the state informatoin
-            VoteState voteState = (VoteState)ar.AsyncState;
+            VotableThingState voteState = (VotableThingState)ar.AsyncState;
             HttpWebRequest request = (HttpWebRequest)voteState.AsyncRequest;
 
             // end the async request
