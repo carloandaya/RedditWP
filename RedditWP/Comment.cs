@@ -6,6 +6,8 @@ using System.Text;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using System.IO;
+
 
 namespace RedditWP
 {
@@ -16,11 +18,14 @@ namespace RedditWP
         private const string EditUserTextUrl = "/api/editusertext";
         private const string RemoveUrl = "/api/remove";
 
+        private Comment returnComment;
+
         private class CommentState
         {
             public HttpWebRequest AsyncRequest { get; set; }
             public HttpWebResponse AsyncResponse { get; set; }
             public String Message { get; set; }
+            public Comment ReplyComment { get; set; }
         }
 
         [JsonIgnore]
@@ -90,28 +95,48 @@ namespace RedditWP
         [JsonIgnore]
         public Comment[] Comments { get; set; }
 
-        public async Task<Comment> Reply(string message)
+        public Comment Reply(string message)
         {
             if (Reddit.User == null)
                 // RedditSharp used an AuthenticationException 
                 // but it's not available for Windows Phone
                 throw new Exception("No user logged in.");
-            var request = Reddit.CreatePost(CommentUrl);
+
             CommentState commentState = new CommentState();
+            var request = Reddit.CreatePost(CommentUrl);            
             commentState.AsyncRequest = request;
             commentState.Message = message;
-            Comment replyComment = await ReplyTask(commentState);
-            return replyComment;
+
+            IAsyncResult replyRequestAR = request.BeginGetRequestStream(new AsyncCallback(ReplyRequest), commentState);
+            IAsyncResult replyResponseAR = request.BeginGetResponse(new AsyncCallback(ReplyResponse), commentState);
+
+            return returnComment;
+            //return ((CommentState)replyResponseAR.AsyncState).ReplyComment;
         }
 
         private void ReplyRequest(IAsyncResult ar)
         {
-
+            CommentState commentState = (CommentState)ar.AsyncState;
+            HttpWebRequest request = commentState.AsyncRequest;
+            Stream stream = request.EndGetRequestStream(ar);
+            Reddit.WritePostBody(stream, new
+            {
+                text = commentState.Message, 
+                thing_id = FullName,
+                uh = Reddit.User.Modhash,
+                api_type = "json"
+                //r = Subreddit
+            });
         }
 
-        private Task<Comment> ReplyTask(CommentState state)
+        private void ReplyResponse(IAsyncResult ar)
         {
-
+            CommentState commentState = (CommentState)ar.AsyncState;
+            HttpWebRequest request = commentState.AsyncRequest;
+            commentState.AsyncResponse = (HttpWebResponse)request.EndGetResponse(ar);
+            var data = Reddit.GetResponseString(commentState.AsyncResponse.GetResponseStream());
+            var json = JObject.Parse(data);
+            returnComment = new Comment(Reddit, json["json"]["data"]["things"][0]);
         }
     }
 }
