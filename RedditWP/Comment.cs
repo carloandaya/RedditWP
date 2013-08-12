@@ -246,27 +246,50 @@ namespace RedditWP
 
         private void RemoveRequest(IAsyncResult ar)
         {
-
+            HttpWebRequest request = (HttpWebRequest)ar.AsyncState;
+            Stream stream = request.EndGetRequestStream(ar);
+            Reddit.WritePostBody(stream, new
+            {
+                id = FullName, 
+                spam = true, 
+                uh = Reddit.User.Modhash
+            });
+            request.BeginGetResponse(new AsyncCallback(RemoveResponse), request);
         }
 
         private void RemoveResponse(IAsyncResult ar)
         {
-
+            HttpWebRequest request = (HttpWebRequest)ar.AsyncState;
+            HttpWebResponse response = (HttpWebResponse)request.EndGetResponse(ar);
+            var data = Reddit.GetResponseString(response.GetResponseStream());
+            // If we're not doing anything with the data, can we just .EndGetResponse
+            // in the request callback? 
         }
 
         public void RemoveSpam()
         {
-
+            var request = Reddit.CreatePost(RemoveUrl);
+            request.BeginGetRequestStream(new AsyncCallback(RemoveSpamRequest), request);
         }
 
         private void RemoveSpamRequest(IAsyncResult ar)
         {
-
+            HttpWebRequest request = (HttpWebRequest)ar.AsyncState;
+            Stream stream = request.EndGetRequestStream(ar);
+            Reddit.WritePostBody(stream, new
+            {
+                id = FullName,
+                spam = true, 
+                uh = Reddit.User.Modhash
+            });
+            request.BeginGetResponse(new AsyncCallback(RemoveSpamResponse), request);
         }
 
         private void RemoveSpamResponse(IAsyncResult ar)
         {
-
+            HttpWebRequest request = (HttpWebRequest)ar.AsyncState;
+            HttpWebResponse response = (HttpWebResponse)request.EndGetResponse(ar);
+            var data = Reddit.GetResponseString(response.GetResponseStream());
         }
     }
 
@@ -276,5 +299,43 @@ namespace RedditWP
         Admin, 
         Special,
         None
+    }
+
+    internal class DistinguishConverter : JsonConverter
+    {
+        public override bool CanConvert(Type objectType)
+        {
+            return objectType == typeof(DistinguishType) || objectType == typeof(string);
+        }
+
+        public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
+        {
+            var token = JToken.Load(reader);
+            var value = token.Value<string>();
+            if (value == null)
+                return DistinguishType.None;
+            switch (value)
+            {
+                case "moderator":
+                    return DistinguishType.Moderator;
+                case "admin":
+                    return DistinguishType.Admin;
+                case "special":
+                    return DistinguishType.Special;
+                default:
+                    return DistinguishType.None;
+            }
+        }
+
+        public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
+        {
+            var d = (DistinguishType)value;
+            if (d == DistinguishType.None)
+            {
+                writer.WriteNull();
+                return;
+            }
+            writer.WriteValue(d.ToString().ToLower());
+        }
     }
 }
