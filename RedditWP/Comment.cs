@@ -237,6 +237,37 @@ namespace RedditWP
             else
                 throw new Exception("Error editing text.");
         }
+
+        public void Remove()
+        {
+            var request = Reddit.CreatePost(RemoveUrl);
+            request.BeginGetRequestStream(new AsyncCallback(RemoveRequest), request);
+        }
+
+        private void RemoveRequest(IAsyncResult ar)
+        {
+
+        }
+
+        private void RemoveResponse(IAsyncResult ar)
+        {
+
+        }
+
+        public void RemoveSpam()
+        {
+
+        }
+
+        private void RemoveSpamRequest(IAsyncResult ar)
+        {
+
+        }
+
+        private void RemoveSpamResponse(IAsyncResult ar)
+        {
+
+        }
     }
 
     public enum DistinguishType
