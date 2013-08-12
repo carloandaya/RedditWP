@@ -40,10 +40,29 @@ namespace RedditWP
         [JsonConverter(typeof(UnixTimestampConverter))]
         public DateTime Created { get; set; }
 
+        public Listing<VotableThing> GetOverview()
+        {
+            return new Listing<VotableThing>(Reddit, string.Format(OverviewUrl, Name));
+        }
+
         public Listing<Comment> GetComments()
         {
             return new Listing<Comment>(Reddit, string.Format(CommentsUrl, Name));
         }
 
+        public Listing<Post> GetPosts()
+        {
+            return new Listing<Post>(Reddit, string.Format(LinksUrl, Name));
+        }
+
+        public Listing<Subreddit> GetSubscribedSubreddits()
+        {
+            return new Listing<Subreddit>(Reddit, SubscribedSubredditsUrl);
+        }
+
+        public override string ToString()
+        {
+            return this.Name;
+        }
     }
 }
