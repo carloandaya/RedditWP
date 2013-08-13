@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace RedditWP
 {
-    class Comment
+    class PrivateMessage
     {
     }
 }
