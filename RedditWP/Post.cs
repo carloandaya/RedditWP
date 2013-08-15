@@ -7,6 +7,7 @@ using System.Linq;
 using System.Net;
 using System.Text;
 using System.Threading.Tasks;
+using System.Net.Http;
 
 namespace RedditWP
 {
@@ -175,6 +176,47 @@ namespace RedditWP
             HttpWebResponse response = (HttpWebResponse)request.EndGetResponse(ar);
             var data = Reddit.GetResponseString(response.GetResponseStream());
         }
-        
+
+        public void RemoveSpam()
+        {
+            var request = Reddit.CreatePost(RemoveUrl);
+            request.BeginGetRequestStream(new AsyncCallback(RemoveSpamRequest), request);
+        }
+
+        private void RemoveSpamRequest(IAsyncResult ar)
+        {
+            HttpWebRequest request = (HttpWebRequest)ar.AsyncState;
+            Stream stream = request.EndGetRequestStream(ar);
+            Reddit.WritePostBody(stream, new
+            {
+                id = FullName,
+                spam = true,
+                uh = Reddit.User.Modhash
+            });
+            request.BeginGetResponse(new AsyncCallback(RemoveSpamResponse), request);
+        }
+
+        private void RemoveSpamResponse(IAsyncResult ar)
+        {
+            HttpWebRequest request = (HttpWebRequest)ar.AsyncState;
+            HttpWebResponse response = (HttpWebResponse)request.EndGetResponse(ar);
+            var data = Reddit.GetResponseString(response.GetResponseStream());
+        }
+
+        // an attempt at using Task and System.Net.Http
+        public async Task<Comment[]> GetComments()
+        {
+            var comments = new List<Comment>();
+            // create a new HttpClient
+            HttpClient client = new HttpClient();            
+            string body = await client.GetStringAsync(string.Format(GetCommentsUrl, Id));
+            var json = JArray.Parse(body);
+            var postJson = json.Last()["data"]["children"];
+            foreach (var comment in postJson)
+            {
+                comments.Add(new Comment(Reddit, comment));
+            }
+            return comments.ToArray();
+        }
     }
 }
