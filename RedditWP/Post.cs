@@ -218,5 +218,24 @@ namespace RedditWP
             }
             return comments.ToArray();
         }
+
+        public async Task EditText(string newText)
+        {
+            if (Reddit.User == null)
+                throw new Exception("No user logged in.");
+            if (!this.IsSelfPost)
+                throw new Exception("Submission to edit is not a self-post.");
+            HttpClient client = new HttpClient();
+            client.BaseAddress = new Uri("http://www.reddit.com");
+            var content = Reddit.StringForPost(new {
+                api_type = "json",
+                text = newText,
+                thing_id = FullName,
+                uh = Reddit.User.Modhash
+            });
+            var response = await client.PostAsync(EditUserTextUrl, content);
+            var responseContent = await response.Content.ReadAsStringAsync();
+            JToken json = JToken.Parse(responseContent);
+        }
     }
 }

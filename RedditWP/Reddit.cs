@@ -6,6 +6,7 @@ using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
+using System.Net.Http;
 
 namespace RedditWP
 {
@@ -152,6 +153,49 @@ namespace RedditWP
             byte[] raw = Encoding.UTF8.GetBytes(value);
             stream.Write(raw, 0, raw.Length);
             stream.Close();
+        }
+
+        protected internal ByteArrayContent ByteArrayForPost(object data, params string[] additionalFields)
+        {
+            var type = data.GetType();
+            var properties = type.GetProperties();
+            string value = String.Empty;
+            foreach (var property in properties)
+            {
+                var entry = Convert.ToString(property.GetValue(data, null));
+                value += property.Name + "=" + HttpUtility.UrlEncode(entry).Replace(";", "%3B").Replace("&", "%26") + "&";
+            }
+            for (int i = 0; i < additionalFields.Length; i += 2)
+            {
+                var entry = Convert.ToString(additionalFields[i + 1]);
+                if (entry == null)
+                    entry = String.Empty;
+                value += additionalFields[i] + "=" + HttpUtility.UrlEncode(entry).Replace(";", "%3B").Replace("&", "%26") + "&";
+            }
+            value = value.Remove(value.Length - 1); // Remove trailing &
+            byte[] raw = Encoding.UTF8.GetBytes(value);
+            return new ByteArrayContent(raw);
+        }
+
+        protected internal StringContent StringForPost(object data, params string[] additionalFields)
+        {
+            var type = data.GetType();
+            var properties = type.GetProperties();
+            string value = String.Empty;
+            foreach (var property in properties)
+            {
+                var entry = Convert.ToString(property.GetValue(data, null));
+                value += property.Name + "=" + HttpUtility.UrlEncode(entry).Replace(";", "%3B").Replace("&", "%26") + "&";
+            }
+            for (int i = 0; i < additionalFields.Length; i += 2)
+            {
+                var entry = Convert.ToString(additionalFields[i + 1]);
+                if (entry == null)
+                    entry = String.Empty;
+                value += additionalFields[i] + "=" + HttpUtility.UrlEncode(entry).Replace(";", "%3B").Replace("&", "%26") + "&";
+            }
+            value = value.Remove(value.Length - 1); // Remove trailing &
+            return new StringContent(value, Encoding.UTF8, "application/x-www-form-urlencoded");
         }
 
         protected internal static DateTime UnixTimeStampToDateTime(double unixTimeStamp)
