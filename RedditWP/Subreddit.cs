@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
@@ -131,6 +132,66 @@ namespace RedditWP
             return new Listing<Post>(Reddit, string.Format(UnmoderatedUrl, Name));
         }
 
+        public async Task Subscribe()
+        {
+            if (Reddit.User == null)
+                throw new Exception("No user logged in.");
+            HttpClient client = Reddit.CreateClient();
+            StringContent content = Reddit.StringForPost(new
+            {
+                action = "sub", 
+                sr = FullName,
+                uh = Reddit.User.Modhash
+            });
+            var response = await client.PostAsync(SubscribeUrl, content);
+            var responseContent = await response.Content.ReadAsStringAsync();
+            // Do something with the results or discard them
+        }
 
+        public async Task Unsubscribe()
+        {
+            if (Reddit.User == null)
+                throw new Exception("No user logged in.");
+            HttpClient client = Reddit.CreateClient();
+            StringContent content = Reddit.StringForPost(new
+            {
+                action = "unsub",
+                sr = FullName,
+                uh = Reddit.User.Modhash
+            });
+            var response = await client.PostAsync(SubscribeUrl, content);
+            var responseContent = await response.Content.ReadAsStringAsync();
+            // Do something with the results or discard them
+        }
+
+        public async Task<SubredditSettings> GetSettings()
+        {
+            bool getSettingsSucceeded;
+            if (Reddit.User == null)
+                throw new Exception("No user logged in.");
+            try
+            {
+                HttpClient client = Reddit.CreateClient();
+                var response = await client.GetAsync(string.Format(GetSettingsUrl, Name));
+                var responseContent = await response.Content.ReadAsStringAsync();
+                var json = JObject.Parse(responseContent);
+                getSettingsSucceeded = true;
+                return new SubredditSettings(this, Reddit, json);
+            }
+            catch // TODO: More specific catch
+            {
+                getSettingsSucceeded = false;
+            }
+
+            if (!getSettingsSucceeded)
+            {
+                // Do it unauthed
+                HttpClient client = Reddit.CreateClient();
+                var response = await client.GetAsync(string.Format(GetReducedSettingsUrl, Name));
+                var responseContent = await response.Content.ReadAsStringAsync();
+                var json = JObject.Parse(responseContent);
+                return new SubredditSettings(this, Reddit, json);
+            }
+        }
     }
 }
