@@ -4,6 +4,7 @@ using System.Linq;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
+using HtmlAgilityPack;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
@@ -192,6 +193,86 @@ namespace RedditWP
                 var json = JObject.Parse(responseContent);
                 return new SubredditSettings(this, Reddit, json);
             }
+        }
+
+        public async Task ClearFlairTemplates(FlairType flairType)
+        {
+            HttpClient client = Reddit.CreateClient();
+            StringContent content = Reddit.StringForPost(new
+            {
+                flair_type = flairType == FlairType.Link ? "LINK_FLAIR" : "USER_FLAIR",
+                uh = Reddit.User.Modhash,
+                r = Name
+            });
+            var response = await client.PostAsync(ClearFlairTemplatesUrl, content);
+            var responseContent = await response.Content.ReadAsStringAsync();
+        }
+
+        public async Task AddFlairTemplate(string cssClass, FlairType flairType, string text, bool userEditable)
+        {
+            HttpClient client = Reddit.CreateClient();
+            StringContent content = Reddit.StringForPost(new
+            {
+                css_class = cssClass,
+                flair_type = flairType == FlairType.Link ? "LINK_FLAIR" : "USER_FLAIR",
+                text = text, 
+                text_editable = userEditable,
+                uh = Reddit.User.Modhash,
+                r = Name,
+                api_type = "json"
+            });
+            var response = await client.PostAsync(FlairTemplateUrl, content);
+            var responseContent = await response.Content.ReadAsStringAsync();
+            var json = JToken.Parse(responseContent);
+        }
+
+        public async Task SetUserFlair(string user, string cssClass, string text)
+        {
+            HttpClient client = Reddit.CreateClient();
+            StringContent content = Reddit.StringForPost(new
+            {
+                css_class = cssClass,
+                text = text, 
+                uh = Reddit.User.Modhash,
+                r = Name, 
+                name = user
+            });
+            var response = await client.PostAsync(SetUserFlairUrl, content);
+            var responseContent = await response.Content.ReadAsStringAsync();
+        }
+
+        public async Task<UserFlairTemplate[]> GetUserFlairTemplates()
+        {
+            HttpClient client = Reddit.CreateClient();
+            StringContent content = Reddit.StringForPost(new
+            {
+                name = Reddit.User.Name, 
+                r = Name, 
+                uh = Reddit.User.Modhash
+            });
+            var response = await client.PostAsync(FlairSelectorUrl, content);
+            var responseContent = await response.Content.ReadAsStringAsync();
+            var document = new HtmlDocument();
+            document.LoadHtml(responseContent);
+            if (document.DocumentNode.Descendants("div").First().Attributes["error"] != null)
+                throw new InvalidOperationException("This subreddit does not allow users to select flair.");
+            var templateNodes = document.DocumentNode.Descendants("li");
+            var list = new List<UserFlairTemplate>();
+            foreach (var node in templateNodes)
+            {
+                list.Add(new UserFlairTemplate
+                {
+                    CssClass = node.Descendants("span").First().Attributes["class"].Value.Split(' ')[1],
+                    Text = node.Descendants("span").First().InnerText
+                });
+            }
+            return list.ToArray();
+        }
+
+        public async Task UploadHeaderImage(string name, ImageType imageType, byte[] file)
+        {
+            HttpClient client = Reddit.CreateClient();
+
         }
     }
 }

@@ -6,7 +6,13 @@ using System.Threading.Tasks;
 
 namespace RedditWP
 {
-    class SubredditStyle
+    public class SubredditStyle
     {
+    }
+
+    public enum ImageType
+    {
+        PNG, 
+        JPEG
     }
 }
