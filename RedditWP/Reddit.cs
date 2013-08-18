@@ -48,6 +48,8 @@ namespace RedditWP
         /// </summary>
         public static string RootDomain { get; set; }
 
+        private static DateTime lastRequest = DateTime.MinValue;
+
         #endregion
 
         /// <summary>
@@ -100,10 +102,25 @@ namespace RedditWP
 
         #region Helpers
         // Will probably need to do a lot of work here to convert to WP8 calls
-
-
-        private static DateTime lastRequest = DateTime.MinValue;
+        
         protected internal HttpWebRequest CreateRequest(string url, string method, bool prependDomain = true)
+        {
+            // creating this function for completion; will remove after conversion
+            // to asynchronous model
+            while (EnableRateLimit && (DateTime.Now - lastRequest).TotalSeconds < 2) ;
+            lastRequest = DateTime.Now;
+            HttpWebRequest request;
+            if (prependDomain)
+                request = (HttpWebRequest)WebRequest.Create(string.Format("http://{0}{1}", RootDomain, url));
+            else
+                request = (HttpWebRequest)WebRequest.Create(url);
+            request.CookieContainer = Cookies;
+            request.Method = method;
+            request.UserAgent = UserAgent;
+            return request;
+        }
+
+        protected internal String CreateURL(string url, bool prependDomain = true)
         {
             throw new NotImplementedException();
         }
@@ -196,6 +213,19 @@ namespace RedditWP
             }
             value = value.Remove(value.Length - 1); // Remove trailing &
             return new StringContent(value, Encoding.UTF8, "application/x-www-form-urlencoded");
+        }
+
+        protected internal HttpClient CreateClient(bool prependDomain = true)
+        {
+            while (EnableRateLimit && (DateTime.Now - lastRequest).TotalSeconds < 2) ; // Rate limiting
+            lastRequest = DateTime.Now;
+            HttpClientHandler handler = new HttpClientHandler();
+            handler.CookieContainer = Cookies;            
+            HttpClient client = new HttpClient(handler);
+            client.DefaultRequestHeaders.Add("user-agent", UserAgent);
+            if (prependDomain)
+                client.BaseAddress = new Uri(string.Format("http://{0}", RootDomain));            
+            return client;
         }
 
         protected internal static DateTime UnixTimeStampToDateTime(double unixTimeStamp)

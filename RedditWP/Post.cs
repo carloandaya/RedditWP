@@ -181,6 +181,10 @@ namespace RedditWP
         {
             var request = Reddit.CreatePost(RemoveUrl);
             request.BeginGetRequestStream(new AsyncCallback(RemoveSpamRequest), request);
+
+            HttpClient client = new HttpClient();
+
+
         }
 
         private void RemoveSpamRequest(IAsyncResult ar)
@@ -208,7 +212,7 @@ namespace RedditWP
         {
             var comments = new List<Comment>();
             // create a new HttpClient
-            HttpClient client = new HttpClient();            
+            HttpClient client = Reddit.CreateClient();
             string body = await client.GetStringAsync(string.Format(GetCommentsUrl, Id));
             var json = JArray.Parse(body);
             var postJson = json.Last()["data"]["children"];
@@ -225,17 +229,20 @@ namespace RedditWP
                 throw new Exception("No user logged in.");
             if (!this.IsSelfPost)
                 throw new Exception("Submission to edit is not a self-post.");
-            HttpClient client = new HttpClient();
-            client.BaseAddress = new Uri("http://www.reddit.com");
+            HttpClient client = Reddit.CreateClient();            
             var content = Reddit.StringForPost(new {
                 api_type = "json",
                 text = newText,
                 thing_id = FullName,
                 uh = Reddit.User.Modhash
             });
-            var response = await client.PostAsync(EditUserTextUrl, content);
+            var response = await client.PostAsync(EditUserTextUrl, content);            
             var responseContent = await response.Content.ReadAsStringAsync();
             JToken json = JToken.Parse(responseContent);
+            if (json["json"].ToString().Contains("\"errors\": []")) // errors element is empty
+                this.SelfText = newText;
+            else
+                throw new Exception("Error editing text.");
         }
     }
 }
