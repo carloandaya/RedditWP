@@ -6,7 +6,9 @@ using System.Threading.Tasks;
 
 namespace RedditWP
 {
-    class FlairType
+    public enum FlairType
     {
+        Link,
+        User
     }
 }

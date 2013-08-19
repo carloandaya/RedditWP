@@ -4,7 +4,6 @@ using System.Linq;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
-using HtmlAgilityPack;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
@@ -167,32 +166,33 @@ namespace RedditWP
 
         public async Task<SubredditSettings> GetSettings()
         {
-            bool getSettingsSucceeded;
-            if (Reddit.User == null)
-                throw new Exception("No user logged in.");
-            try
-            {
-                HttpClient client = Reddit.CreateClient();
-                var response = await client.GetAsync(string.Format(GetSettingsUrl, Name));
-                var responseContent = await response.Content.ReadAsStringAsync();
-                var json = JObject.Parse(responseContent);
-                getSettingsSucceeded = true;
-                return new SubredditSettings(this, Reddit, json);
-            }
-            catch // TODO: More specific catch
-            {
-                getSettingsSucceeded = false;
-            }
+            throw new NotImplementedException();
+            //bool getSettingsSucceeded;            
+            //if (Reddit.User == null)
+            //    throw new Exception("No user logged in.");
+            //try
+            //{
+            //    HttpClient client = Reddit.CreateClient();
+            //    var response = await client.GetAsync(string.Format(GetSettingsUrl, Name));
+            //    var responseContent = await response.Content.ReadAsStringAsync();
+            //    var json = JObject.Parse(responseContent);
+            //    getSettingsSucceeded = true;
+            //    return new SubredditSettings(this, Reddit, json);
+            //}
+            //catch // TODO: More specific catch
+            //{
+            //    getSettingsSucceeded = false;
+            //}
 
-            if (!getSettingsSucceeded)
-            {
-                // Do it unauthed
-                HttpClient client = Reddit.CreateClient();
-                var response = await client.GetAsync(string.Format(GetReducedSettingsUrl, Name));
-                var responseContent = await response.Content.ReadAsStringAsync();
-                var json = JObject.Parse(responseContent);
-                return new SubredditSettings(this, Reddit, json);
-            }
+            //if (!getSettingsSucceeded)
+            //{
+            //    // Do it unauthed
+            //    HttpClient client = Reddit.CreateClient();
+            //    var response = await client.GetAsync(string.Format(GetReducedSettingsUrl, Name));
+            //    var responseContent = await response.Content.ReadAsStringAsync();
+            //    var json = JObject.Parse(responseContent);
+            //    return new SubredditSettings(this, Reddit, json);
+            //}
         }
 
         public async Task ClearFlairTemplates(FlairType flairType)
@@ -241,32 +241,9 @@ namespace RedditWP
             var responseContent = await response.Content.ReadAsStringAsync();
         }
 
-        public async Task<UserFlairTemplate[]> GetUserFlairTemplates()
+        public Task<UserFlairTemplate[]> GetUserFlairTemplates()
         {
-            HttpClient client = Reddit.CreateClient();
-            StringContent content = Reddit.StringForPost(new
-            {
-                name = Reddit.User.Name, 
-                r = Name, 
-                uh = Reddit.User.Modhash
-            });
-            var response = await client.PostAsync(FlairSelectorUrl, content);
-            var responseContent = await response.Content.ReadAsStringAsync();
-            var document = new HtmlDocument();
-            document.LoadHtml(responseContent);
-            if (document.DocumentNode.Descendants("div").First().Attributes["error"] != null)
-                throw new InvalidOperationException("This subreddit does not allow users to select flair.");
-            var templateNodes = document.DocumentNode.Descendants("li");
-            var list = new List<UserFlairTemplate>();
-            foreach (var node in templateNodes)
-            {
-                list.Add(new UserFlairTemplate
-                {
-                    CssClass = node.Descendants("span").First().Attributes["class"].Value.Split(' ')[1],
-                    Text = node.Descendants("span").First().InnerText
-                });
-            }
-            return list.ToArray();
+            throw new NotImplementedException();
         }
 
         public void UploadHeaderImage(string name, ImageType imageType, byte[] file)
@@ -279,7 +256,7 @@ namespace RedditWP
         {
             HttpClient client = Reddit.CreateClient();
             var response = await client.GetAsync(string.Format(StylesheetUrl, Name));
-            var responseContent = await response.Content.ReadAsStringAsync());
+            var responseContent = await response.Content.ReadAsStringAsync();
             var json = JToken.Parse(responseContent);
             return new SubredditStyle(Reddit, this, json);
         }
