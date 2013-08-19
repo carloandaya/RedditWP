@@ -269,10 +269,79 @@ namespace RedditWP
             return list.ToArray();
         }
 
-        public async Task UploadHeaderImage(string name, ImageType imageType, byte[] file)
+        public void UploadHeaderImage(string name, ImageType imageType, byte[] file)
+        {
+            // Need to understand what is going on with MultiPartForm
+            throw new NotImplementedException();
+        }
+
+        public async Task<SubredditStyle> GetStylesheet()
         {
             HttpClient client = Reddit.CreateClient();
+            var response = await client.GetAsync(string.Format(StylesheetUrl, Name));
+            var responseContent = await response.Content.ReadAsStringAsync());
+            var json = JToken.Parse(responseContent);
+            return new SubredditStyle(Reddit, this, json);
+        }
 
+        public async Task AcceptModeratorInvite()
+        {
+            HttpClient client = Reddit.CreateClient();
+            StringContent content = Reddit.StringForPost(new
+            {
+                api_type = "json", 
+                uh = Reddit.User.Modhash,
+                r = Name
+            });
+            var response = await client.PostAsync(AcceptModeratorInviteUrl, content);
+            var responseContent = await response.Content.ReadAsStringAsync();
+        }
+
+        public async Task RemoveModerator(string id)
+        {
+            HttpClient client = Reddit.CreateClient();
+            StringContent content = Reddit.StringForPost(new
+            {
+                api_type = "json", 
+                uh = Reddit.User.Modhash,
+                r = Name, 
+                type = "moderator", 
+                id
+            });
+            var response = await client.PostAsync(LeaveModerationUrl, content);
+            var responseContent = await response.Content.ReadAsStringAsync();
+        }
+
+        public override string ToString()
+        {
+            return "/r/" + DisplayName;
+        }
+
+        /// <summary>
+        /// Submits a text post in the current subreddit using the logged-in user
+        /// </summary>
+        /// <param name="title">The title of the submission</param>
+        /// <param name="text">The raw markdown of the submission</param>
+        /// <returns></returns>
+        public async Task<Post> SubmitTextPost(string title, string text)
+        {
+            if (Reddit.User == null)
+                throw new Exception("No user logged in.");
+            HttpClient client = Reddit.CreateClient();
+            StringContent content = Reddit.StringForPost(new
+            {
+                api_type = "json", 
+                kind = "self", 
+                sr = Title, 
+                text = text, 
+                title = title, 
+                uh = Reddit.User.Modhash
+            });
+            var response = await client.PostAsync(SubmitLinkUrl, content);
+            var responseString = await response.Content.ReadAsStringAsync();
+            var json = JToken.Parse(responseString);
+            return new Post(Reddit, json["json"]);
+            // TODO: Error
         }
     }
 }
