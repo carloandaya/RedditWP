@@ -1,4 +1,6 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -6,9 +8,50 @@ using System.Threading.Tasks;
 
 namespace RedditWP
 {
-    public class AuthenticatedUser
+    public class AuthenticatedUser : RedditUser
     {
-        public string Name { get; set; }
+        private const string ModeratorUrl = "/reddits/mine/moderator.json";
+        private const string UnreadMessagesUrl = "/message/unread.json?mark=true&limit=25";
+        private const string ModQueueUrl = "/r/mod/about/modqueue.json";
+        private const string UnmoderatedUrl = "/r/mod/about/unmoderated.json";
+        private const string ModMailUrl = "/message/moderator.json";
+
+        public AuthenticatedUser(Reddit reddit, JToken json)
+            : base(reddit, json)
+        {
+            JsonConvert.PopulateObject(json["data"].ToString(), this, reddit.JsonSerializerSettings);
+        }
+        
+        public Listing<Subreddit> GetModeratorReddits()
+        {
+            return new Listing<Subreddit>(Reddit, ModeratorUrl);
+        }
+
+        public Listing<Thing> GetUnreadMessages()
+        {
+            return new Listing<Thing>(Reddit, UnreadMessagesUrl);
+        }
+
+        public Listing<VotableThing> GetModerationQueue()
+        {
+            return new Listing<VotableThing>(Reddit, ModQueueUrl);
+        }
+
+        public Listing<Post> GetUnmoderatedLinks()
+        {
+            return new Listing<Post>(Reddit, UnmoderatedUrl);
+        }
+
+        public Listing<PrivateMessage> GetModMail()
+        {
+            return new Listing<PrivateMessage>(Reddit, ModMailUrl);
+        }
+
+        [JsonProperty("modhash")]
         public string Modhash { get; set; }
+        [JsonProperty("has_mail")]
+        public bool HasMail { get; set; }
+        [JsonProperty("has_mod_mail")]
+        public bool HasModMail { get; set; }
     }
 }
