@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using HtmlAgilityPack;
 
 namespace RedditWP
 {
@@ -241,7 +242,7 @@ namespace RedditWP
             var responseContent = await response.Content.ReadAsStringAsync();
         }
 
-        public Task<UserFlairTemplate[]> GetUserFlairTemplates()
+        public async Task<UserFlairTemplate[]> GetUserFlairTemplates()
         {
             throw new NotImplementedException();
         }
