@@ -250,6 +250,7 @@ namespace RedditWP
         public void UploadHeaderImage(string name, ImageType imageType, byte[] file)
         {
             // Need to understand what is going on with MultiPartForm
+            // TODO: Finish this method
             throw new NotImplementedException();
         }
 
@@ -318,6 +319,33 @@ namespace RedditWP
             var response = await client.PostAsync(SubmitLinkUrl, content);
             var responseString = await response.Content.ReadAsStringAsync();
             var json = JToken.Parse(responseString);
+            return new Post(Reddit, json["json"]);
+            // TODO: Error
+        }
+
+        /// <summary>
+        /// Submits a link post in the current subreddit using the logged-in user
+        /// </summary>
+        /// <param name="title">The title of the submission</param>
+        /// <param name="url">The url of the submission link</param>
+        public async Task<Post> SubmitPost(string title, string url)
+        {
+            if (Reddit.User == null)
+                throw new Exception("No user logged in.");
+            HttpClient client = Reddit.CreateClient();
+            StringContent content = Reddit.StringForPost(new
+                {
+                    api_type = "json",
+                    extension = "json",
+                    kind = "link",
+                    sr = Title,
+                    title = title,
+                    uh = Reddit.User.Modhash,
+                    url = url
+                });
+            var response = await client.PostAsync(SubmitLinkUrl, content);
+            var responseContent = await response.Content.ReadAsStringAsync();            
+            var json = JToken.Parse(responseContent);
             return new Post(Reddit, json["json"]);
             // TODO: Error
         }

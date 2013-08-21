@@ -7,6 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 using System.Net.Http;
+using Newtonsoft.Json.Linq;
 
 namespace RedditWP
 {
@@ -14,7 +15,7 @@ namespace RedditWP
     {
         #region Constant Urls
 
-        private const string SslLoginUrl = "https://ssl.reddit.com/api/login";
+        private const string SslLoginUrl = "https://ssl.reddit.com/api/login";        
         private const string LoginUrl = "/api/login/username";
         private const string UserInfoUrl = "/user/{0}/about.json";
         private const string MeUrl = "/api/me.json";
@@ -70,9 +71,49 @@ namespace RedditWP
             JsonSerializerSettings.DefaultValueHandling = DefaultValueHandling.Ignore;
         }
 
-        public AuthenticatedUser LogIn(string username, string password, bool useSsl = true)
+        public async Task<AuthenticatedUser> LogIn(string username, string password, bool useSsl = true)
         {
-            throw new NotImplementedException();
+            Cookies = new CookieContainer();
+            HttpClient client;
+            StringContent content;
+            HttpResponseMessage response;
+            if (useSsl)
+            {
+                content = StringForPost(new
+                {
+                    user = username,
+                    passwd = password,
+                    api_type = "json"
+                });
+            }
+            else
+            {
+                content = StringForPost(new
+                {
+                    user = username,
+                    passwd = password,
+                    api_type = "json",
+                    op = "login"
+                });
+            }
+
+            if (useSsl)
+            {
+                client = CreateClient(false);
+                response = await client.PostAsync(SslLoginUrl, content);
+            }                
+            else
+            {
+                client = CreateClient();
+                response = await client.PostAsync(LoginUrl, content);
+            }
+
+            var responseContent = await response.Content.ReadAsStringAsync();
+            var json = JObject.Parse(responseContent)["json"];
+            if (json["errors"].Count() != 0)
+                throw new Exception("Incorrect login.");
+            await GetMe(); // assigns the authenticated user to the User variable
+            return User;            
         }
 
         public RedditUser GetUser(string name)
@@ -80,9 +121,14 @@ namespace RedditWP
             throw new NotImplementedException();
         }
 
-        public AuthenticatedUser GetMe()
+        public async Task<AuthenticatedUser> GetMe()
         {
-            throw new NotImplementedException();
+            HttpClient client = CreateClient();
+            var response = await client.GetAsync(MeUrl);
+            var responseContent = await response.Content.ReadAsStringAsync();
+            var json = JObject.Parse(responseContent);
+            User = new AuthenticatedUser(this, json);
+            return User;
         }
 
         public Subreddit GetSubreddit(string name)
