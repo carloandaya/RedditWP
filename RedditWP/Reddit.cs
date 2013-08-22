@@ -268,7 +268,7 @@ namespace RedditWP
             HttpClientHandler handler = new HttpClientHandler();
             handler.CookieContainer = Cookies;            
             HttpClient client = new HttpClient(handler);
-            client.DefaultRequestHeaders.Add("user-agent", UserAgent);
+            client.DefaultRequestHeaders.Add("user-agent", UserAgent + " - with RedditWP" );
             if (prependDomain)
                 client.BaseAddress = new Uri(string.Format("http://{0}", RootDomain));            
             return client;
