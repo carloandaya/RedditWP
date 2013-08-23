@@ -6,7 +6,13 @@ using System.Threading.Tasks;
 
 namespace RedditWP
 {
-    class RedditException
+    public class RedditException
     {
+        public RedditException(string message)
+        {
+            Message = message;
+        }
+
+        public string Message { get; set; }
     }
 }

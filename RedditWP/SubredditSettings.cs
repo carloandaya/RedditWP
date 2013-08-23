@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
+using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -126,90 +127,85 @@ namespace RedditWP
         public int WikiEditAge { get; set; }
         public ContentOptions ContentOptions { get; set; }
 
-        public void UpdateSettings()
+        public async Task UpdateSettings()
         {
-            throw new NotImplementedException();
-            //var request = Reddit.CreatePost(SiteAdminUrl);
-            //var stream = request.GetRequestStream();
-            //string link_type;
-            //string type;
-            //string wikimode;
-            //switch (ContentOptions)
-            //{
-            //    case RedditWP.ContentOptions.All:
-            //        link_type = "any";
-            //        break;
-            //    case RedditWP.ContentOptions.LinkOnly:
-            //        link_type = "link";
-            //        break;
-            //    default:
-            //        link_type = "self";
-            //        break;
-            //}
-            //switch (SubredditType)
-            //{
-            //    case SubredditType.Public:
-            //        type = "public";
-            //        break;
-            //    case SubredditType.Private:
-            //        type = "private";
-            //        break;
-            //    default:
-            //        type = "restricted";
-            //        break;
-            //}
-            //switch (WikiEditMode)
-            //{
-            //    case WikiEditMode.All:
-            //        wikimode = "anyone";
-            //        break;
-            //    case WikiEditMode.Moderators:
-            //        wikimode = "modonly";
-            //        break;
-            //    default:
-            //        wikimode = "disabled";
-            //        break;
-            //}
-            //Reddit.WritePostBody(stream, new
-            //{
-            //    allow_top = AllowAsDefault,
-            //    description = Sidebar,
-            //    domain = Domain,
-            //    lang = Language,
-            //    link_type,
-            //    over_18 = NSFW,
-            //    public_description = PublicDescription,
-            //    show_media = ShowThumbnails,
-            //    sr = Subreddit.FullName,
-            //    title = Title,
-            //    type,
-            //    uh = Reddit.User.Modhash,
-            //    wiki_edit_age = WikiEditAge,
-            //    wiki_edit_karma = WikiEditKarma,
-            //    wikimode,
-            //    api_type = "json"
-            //}, "header-title", HeaderHoverText);
-            //stream.Close();
-            //var response = request.GetResponse();
-            //var data = Reddit.GetResponseString(response.GetResponseStream());
+            HttpClient client = Reddit.CreateClient();            
+            //var request = Reddit.CreatePost(SiteAdminUrl);            
+            string link_type;
+            string type;
+            string wikimode;
+            switch (ContentOptions)
+            {
+                case RedditWP.ContentOptions.All:
+                    link_type = "any";
+                    break;
+                case RedditWP.ContentOptions.LinkOnly:
+                    link_type = "link";
+                    break;
+                default:
+                    link_type = "self";
+                    break;
+            }
+            switch (SubredditType)
+            {
+                case SubredditType.Public:
+                    type = "public";
+                    break;
+                case SubredditType.Private:
+                    type = "private";
+                    break;
+                default:
+                    type = "restricted";
+                    break;
+            }
+            switch (WikiEditMode)
+            {
+                case WikiEditMode.All:
+                    wikimode = "anyone";
+                    break;
+                case WikiEditMode.Moderators:
+                    wikimode = "modonly";
+                    break;
+                default:
+                    wikimode = "disabled";
+                    break;
+            }
+            StringContent content = Reddit.StringForPost(new
+            {
+                allow_top = AllowAsDefault,
+                description = Sidebar,
+                domain = Domain,
+                lang = Language,
+                link_type,
+                over_18 = NSFW,
+                public_description = PublicDescription,
+                show_media = ShowThumbnails,
+                sr = Subreddit.FullName,
+                title = Title,
+                type,
+                uh = Reddit.User.Modhash,
+                wiki_edit_age = WikiEditAge,
+                wiki_edit_karma = WikiEditKarma,
+                wikimode,
+                api_type = "json"
+            }, "header-title", HeaderHoverText);
+            var response = await client.PostAsync(SiteAdminUrl, content);
+            var responseContent = await response.Content.ReadAsStringAsync();            
         }
 
         /// <summary>
         /// Resets the subreddit's header image to the Reddit logo
         /// </summary>
-        public void ResetHeaderImage()
+        public async Task ResetHeaderImage()
         {
-            throw new NotImplementedException();
-            //var request = Reddit.CreatePost(DeleteHeaderImageUrl);
-            //var stream = request.GetRequestStream();
-            //Reddit.WritePostBody(stream, new
-            //{
-            //    uh = Reddit.User.Modhash,
-            //    r = Subreddit.Name
-            //});
-            //stream.Close();
-            //var response = request.GetResponse();
-            //var data = Reddit.GetResponseString(response.GetResponseStream());
+            HttpClient client = Reddit.CreateClient();
+            StringContent content = Reddit.StringForPost(new
+            {
+                uh = Reddit.User.Modhash,
+                r = Subreddit.Name
+            });
+            var response = await client.PostAsync(DeleteHeaderImageUrl, content);
+            var responseContent = await response.Content.ReadAsStringAsync();
         }
     }
 

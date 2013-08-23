@@ -168,7 +168,10 @@ namespace RedditWP
         public async Task<SubredditSettings> GetSettings()
         {
             throw new NotImplementedException();
-            //bool getSettingsSucceeded;            
+
+            // TODO: how to do a catch in async
+
+            //bool getSettingsSucceeded;
             //if (Reddit.User == null)
             //    throw new Exception("No user logged in.");
             //try

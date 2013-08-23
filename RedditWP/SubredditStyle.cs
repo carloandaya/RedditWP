@@ -25,7 +25,15 @@ namespace RedditWP
         public SubredditStyle(Reddit reddit, Subreddit subreddit, JToken json)
             : this(reddit, subreddit)
         {
-            throw new NotImplementedException();
+            Images = new List<SubredditImage>();
+            var data = json["data"];
+            CSS = HttpUtility.HtmlDecode(data["stylesheet"].Value<string>());
+            foreach (var image in data["images"])
+            {
+                Images.Add(new SubredditImage(
+                    Reddit, this, image["link"].Value<string>(),
+                    image["name"].Value<string>(), image["url"].Value<string>()));
+            }
         }
 
         public string CSS { get; set; }
@@ -50,6 +58,7 @@ namespace RedditWP
 
         public void UploadImage(string name, ImageType imageType, byte[] file)
         {
+            //TODO: figure out multipart form
             throw new NotImplementedException();
         }
     }
