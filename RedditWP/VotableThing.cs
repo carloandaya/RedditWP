@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.IO;
+using System.Net.Http;
 
 namespace RedditWP
 {
@@ -59,93 +60,48 @@ namespace RedditWP
         /// </summary>
         public bool? Liked { get; set; }
 
-        public void Upvote()
+        public async Task Upvote()
         {
-            var request = Reddit.CreatePost(VoteUrl);
-            request.BeginGetRequestStream(new AsyncCallback(UpvoteRequest), request);
-        }
-
-        private void UpvoteRequest(IAsyncResult ar)
-        {
-            HttpWebRequest request = (HttpWebRequest)ar.AsyncState;
-
-            Stream stream = request.EndGetRequestStream(ar);
-
-            Reddit.WritePostBody(stream, new
+            HttpClient client = Reddit.CreateClient();
+            StringContent content = Reddit.StringForPost(new
             {
                 dir = 1,
                 id = FullName,
                 uh = Reddit.User.Modhash
-            });            
-
-            request.BeginGetResponse(new AsyncCallback(UpvoteResponse), request);
-        }
-
-        private void UpvoteResponse(IAsyncResult ar)
-        {
-            HttpWebRequest request = (HttpWebRequest)ar.AsyncState;
-            HttpWebResponse response = (HttpWebResponse)request.EndGetResponse(ar);
-            var data = Reddit.GetResponseString(response.GetResponseStream());
+            });
+            var response = await client.PostAsync(VoteUrl, content);
+            var responseContent = await response.Content.ReadAsStringAsync();
             // TODO: check the data for success or failure
             Liked = true;
         }
 
-        public void Downvote()
+        public async Task Downvote()
         {
-            var request = Reddit.CreatePost(VoteUrl);
-            request.BeginGetRequestStream(new AsyncCallback(DownvoteRequest), request);
-        }
-
-        private void DownvoteRequest(IAsyncResult ar)
-        {
-            HttpWebRequest request = (HttpWebRequest)ar.AsyncState;
-
-            Stream stream = request.EndGetRequestStream(ar);
-
-            Reddit.WritePostBody(stream, new 
+            HttpClient client = Reddit.CreateClient();
+            StringContent content = Reddit.StringForPost(new
             {
                 dir = -1,
-                id = FullName, 
+                id = FullName,
                 uh = Reddit.User.Modhash
             });
-
-            request.BeginGetResponse(new AsyncCallback(DownvoteResponse), request);
-        }
-
-        private void DownvoteResponse(IAsyncResult ar)
-        {
-            HttpWebRequest request = (HttpWebRequest)ar.AsyncState;
-            HttpWebResponse response = (HttpWebResponse)request.EndGetResponse(ar);
-            var data = Reddit.GetResponseString(response.GetResponseStream());
+            var response = await client.PostAsync(VoteUrl, content);
+            var responseContent = await response.Content.ReadAsStringAsync();
             // TODO: check the data for success or failure
             Liked = false; 
         }
 
-        public void Save()
+        public async Task Save()
         {
-            var request = Reddit.CreatePost(SaveUrl);
-            var stream = request.BeginGetRequestStream(new AsyncCallback(SaveRequest), request);
-        }
-
-        private void SaveRequest(IAsyncResult ar)
-        {
-            HttpWebRequest request = (HttpWebRequest)ar.AsyncState;
-            Stream stream = request.EndGetRequestStream(ar);
-            Reddit.WritePostBody(stream, new
+            HttpClient client = Reddit.CreateClient();
+            StringContent content = Reddit.StringForPost(new
             {
                 id = FullName,
                 uh = Reddit.User.Modhash
             });
-            request.BeginGetResponse(new AsyncCallback(SaveResponse), request);
-        }
-
-        private void SaveResponse(IAsyncResult ar)
-        {
-            HttpWebRequest request = (HttpWebRequest)ar.AsyncState;
-            HttpWebResponse response = (HttpWebResponse)request.EndGetResponse(ar);
-            var data = Reddit.GetResponseString(response.GetResponseStream());
+            var response = await client.PostAsync(SaveUrl, content);
+            var responseContent = await response.Content.ReadAsStringAsync();
             Saved = true;
-        }
+        }        
 
         public void Unsave()
         {
