@@ -129,8 +129,7 @@ namespace RedditWP
 
         public async Task UpdateSettings()
         {
-            HttpClient client = Reddit.CreateClient();            
-            //var request = Reddit.CreatePost(SiteAdminUrl);            
+            HttpClient client = Reddit.CreateClient();
             string link_type;
             string type;
             string wikimode;

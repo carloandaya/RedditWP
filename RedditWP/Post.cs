@@ -39,7 +39,7 @@ namespace RedditWP
         /// in some functions
         /// </summary>
         [JsonIgnore]
-        public RedditUser Author
+        public Task<RedditUser> Author
         {
             get
             {

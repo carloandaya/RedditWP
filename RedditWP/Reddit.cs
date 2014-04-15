@@ -21,7 +21,9 @@ namespace RedditWP
         private const string MeUrl = "/api/me.json";
         private const string SubredditAboutUrl = "/r/{0}/about.json";
         private const string ComposeMessageUrl = "/api/compose";
-        private const string RegisterAccountIrl = "/api/register";
+        private const string RegisterAccountUrl = "/api/register";
+        private const string GetThingUrl = "/by_id/{0}.json";
+        private const string GetCommentUrl = "/r/{0}/comments/{1}/foo/{2}.json";
 
         #endregion
 
@@ -116,9 +118,12 @@ namespace RedditWP
             return User;            
         }
 
-        public RedditUser GetUser(string name)
+        public async Task<RedditUser> GetUser(string name)
         {
-            throw new NotImplementedException();
+            HttpClient client = CreateClient();
+            var result = await client.GetStringAsync(string.Format(UserInfoUrl, name));
+            var json = JObject.Parse(result);
+            return new RedditUser(this, json);
         }
 
         public async Task<AuthenticatedUser> GetMe()
@@ -131,19 +136,85 @@ namespace RedditWP
             return User;
         }
 
-        public Subreddit GetSubreddit(string name)
+        public async Task<Subreddit> GetSubreddit(string name)
         {
-            throw new NotImplementedException();
+            if (name.StartsWith("r/"))
+                name = name.Substring(2);
+            if (name.StartsWith("/r/"))
+                name = name.Substring(3);
+            return (Subreddit) await GetThing(string.Format(SubredditAboutUrl, name));
         }
 
-        public void ComposePrivateMessage(string subject, string body, string to)
+        public async Task ComposePrivateMessage(string subject, string body, string to)
         {
-            throw new NotImplementedException();
+            if (User == null)
+                throw new Exception("User can not be null.");
+            HttpClient client = CreateClient();
+            StringContent content = StringForPost(new
+            {
+                api_type = "json",
+                subject,
+                text = body,
+                to,
+                uh = User.Modhash
+            });
+            var response = await client.PostAsync(ComposeMessageUrl, content);
+            var responseContent = await response.Content.ReadAsStringAsync();            
+            // TODO: Error
         }
 
-        public AuthenticatedUser RegisterAccount(string userName, string passwd, string email = "")
+        /// <summary>
+        /// Registers a new Reddit user
+        /// </summary>
+        /// <param name="userName">The username for the new account.</param>
+        /// <param name="passwd">The password for the new account.</param>
+        /// <param name="email">The optional recovery email for the new account.</param>
+        /// <returns>The newly created user account</returns>
+        public async Task<AuthenticatedUser> RegisterAccount(string userName, string passwd, string email = "")
         {
-            throw new NotImplementedException();
+            HttpClient client = CreateClient();
+
+            //var request = CreatePost(RegisterAccountUrl);
+            StringContent content = StringForPost(new
+            {
+                api_type = "json",
+                email = email,
+                passwd = passwd,
+                passwd2 = passwd,
+                user = userName
+            });
+            var response = await client.PostAsync(RegisterAccountUrl, content);
+            var responseContent = await response.Content.ReadAsStringAsync();            
+            var json = JObject.Parse(responseContent);
+            return new AuthenticatedUser(this, json);
+            // TODO: Error
+        }
+
+        public async Task<Thing> GetThingByFullname(string fullname)
+        {
+            HttpClient client = CreateClient();
+            var data = await client.GetStringAsync(GetThingUrl);            
+            var json = JToken.Parse(data);
+            return Thing.Parse(this, json["data"]["children"][0]);
+        }
+
+        public async Task<Comment> GetComment(string subreddit, string name, string linkName)
+        {
+            try
+            {
+                if (linkName.StartsWith("t3_"))
+                    linkName = linkName.Substring(3);
+                if (name.StartsWith("t1_"))
+                    name = name.Substring(3);
+                HttpClient client = CreateClient();
+                var data = await client.GetStringAsync(string.Format(GetCommentUrl, subreddit, linkName, name));                
+                var json = JToken.Parse(data);
+                return Thing.Parse(this, json[1]["data"]["children"][0]) as Comment;
+            }
+            catch (WebException e)
+            {
+                return null;
+            }
         }
 
         #region Helpers
@@ -190,9 +261,12 @@ namespace RedditWP
             return data;
         }
 
-        protected internal Thing GetThing(string url, bool prependDomain = true)
+        protected async internal Task<Thing> GetThing(string url, bool prependDomain = true)
         {
-            throw new NotImplementedException();
+            HttpClient client = CreateClient(prependDomain);
+            string data = await client.GetStringAsync(url);
+            var json = JToken.Parse(data);
+            return Thing.Parse(this, json);            
         }
 
         protected internal void WritePostBody(Stream stream, object data, params string[] additionalFields)

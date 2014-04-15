@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using System.Collections;
 using System.Net;
 using Newtonsoft.Json.Linq;
+using System.Net.Http;
 
 namespace RedditWP
 {
@@ -52,7 +53,7 @@ namespace RedditWP
                 }
             }
 
-            private void FetchNextPage()
+            private async Task FetchNextPage()
             {
                 var url = Listing.Url;
                 if (After != null)
@@ -62,21 +63,14 @@ namespace RedditWP
                     else
                         url += "?after=" + After;
                 }
-                
-                var request = Listing.Reddit.CreateGet(url);
-                request.BeginGetResponse(new AsyncCallback(FetchNextPageResponse), request);
-            }
-
-            private void FetchNextPageResponse(IAsyncResult ar)
-            {
-                HttpWebRequest request = (HttpWebRequest)ar.AsyncState;
-                HttpWebResponse response = (HttpWebResponse)request.EndGetResponse(ar);
-                var data = Listing.Reddit.GetResponseString(response.GetResponseStream());
-                var json = JToken.Parse(data);
+                HttpClient client = Listing.Reddit.CreateClient();
+                var response = await client.GetAsync(url);
+                var responseContent = await response.Content.ReadAsStringAsync();
+                var json = JToken.Parse(responseContent);
                 if (json["kind"].ValueOrDefault<string>() != "Listing")
                     throw new FormatException("Reddit responded with an object that is not a listing.");
                 Parse(json);
-            }
+            }            
 
             private void Parse(JToken json)
             {
@@ -93,15 +87,15 @@ namespace RedditWP
                 get { return this.Current; }
             }
 
-            public bool MoveNext()
+            public async Task<bool> MoveNext()
             {
                 if (CurrentPage == null)
-                    FetchNextPage();
+                    await FetchNextPage();
                 if (CurrentPageIndex >= CurrentPage.Length)
                 {
                     if (After == null)
                         return false;
-                    FetchNextPage();
+                    await FetchNextPage();
                     ResetCurrentPageIndex();
                 }
                 CurrentPageIndex++;

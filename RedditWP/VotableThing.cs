@@ -101,93 +101,45 @@ namespace RedditWP
             var response = await client.PostAsync(SaveUrl, content);
             var responseContent = await response.Content.ReadAsStringAsync();
             Saved = true;
-        }        
-
-        public void Unsave()
-        {
-            var request = Reddit.CreatePost(UnsaveUrl);
-            request.BeginGetRequestStream(new AsyncCallback(UnsaveRequest), request);
         }
 
-        private void UnsaveRequest(IAsyncResult ar)
+        public async Task Unsave()
         {
-            HttpWebRequest request = (HttpWebRequest)ar.AsyncState;
-            Stream stream = request.EndGetRequestStream(ar);
-            Reddit.WritePostBody(stream, new
+            HttpClient client = Reddit.CreateClient();
+            StringContent content = Reddit.StringForPost(new
             {
                 id = FullName,
                 uh = Reddit.User.Modhash
             });
-            request.BeginGetResponse(new AsyncCallback(UnsaveResponse), request);
-        }
-
-        private void UnsaveResponse(IAsyncResult ar)
-        {
-            HttpWebRequest request = (HttpWebRequest)ar.AsyncState;
-            HttpWebResponse response = (HttpWebResponse)request.EndGetResponse(ar);
-            var data = Reddit.GetResponseString(response.GetResponseStream());
+            var response = await client.PostAsync(UnsaveUrl, content);
+            var responseContent = await response.Content.ReadAsStringAsync();
             Saved = false;
         }
 
-        public void ClearVote()
+        public async Task ClearVote()
         {
-            var request = Reddit.CreatePost(VoteUrl);
-            request.BeginGetRequestStream(new AsyncCallback(ClearVoteRequest), request);
-        }
-
-        private void ClearVoteRequest(IAsyncResult ar)
-        {
-            HttpWebRequest request = (HttpWebRequest)ar.AsyncState;
-            Stream stream = request.EndGetRequestStream(ar);
-            Reddit.WritePostBody(stream, new 
+            HttpClient client = Reddit.CreateClient();
+            StringContent content = Reddit.StringForPost(new
             {
                 dir = 0,
                 id = FullName,
                 uh = Reddit.User.Modhash
             });
-            request.BeginGetResponse(new AsyncCallback(ClearVoteResponse), request);
+            var response = await client.PostAsync(VoteUrl, content);
+            var responseContent = await response.Content.ReadAsStringAsync();
         }
 
-        private void ClearVoteResponse(IAsyncResult ar)
+        public async Task Vote(VoteType type)
         {
-            HttpWebRequest request = (HttpWebRequest)ar.AsyncState;
-            HttpWebResponse response = (HttpWebResponse)request.EndGetResponse(ar);
-            var data = Reddit.GetResponseString(response.GetResponseStream());            
-        }
-
-        public void Vote(VoteType type)
-        {
-            VotableThingState voteState = new VotableThingState();
-            var request = Reddit.CreatePost(VoteUrl);
-            voteState.AsyncRequest = request;
-            voteState.VoteType = type;
-            request.BeginGetRequestStream(new AsyncCallback(VoteRequest), voteState);            
-        }
-
-        private void VoteRequest(IAsyncResult ar)
-        {
-            // get the state information
-            VotableThingState voteState = (VotableThingState)ar.AsyncState;
-            HttpWebRequest request = (HttpWebRequest)voteState.AsyncRequest;
-            Stream stream = request.EndGetRequestStream(ar);
-            Reddit.WritePostBody(stream, new
+            HttpClient client = Reddit.CreateClient();
+            StringContent content = Reddit.StringForPost(new
             {
-                dir = (int)voteState.VoteType,
+                dir = (int)type,
                 id = FullName,
                 uh = Reddit.User.Modhash
             });
-            request.BeginGetResponse(new AsyncCallback(VoteResponse), voteState);
-        }
-
-        private void VoteResponse(IAsyncResult ar)
-        {
-            // get the state informatoin
-            VotableThingState voteState = (VotableThingState)ar.AsyncState;
-            HttpWebRequest request = (HttpWebRequest)voteState.AsyncRequest;
-
-            // end the async request
-            voteState.AsyncResponse = (HttpWebResponse)request.EndGetResponse(ar);            
-            var data = Reddit.GetResponseString(voteState.AsyncResponse.GetResponseStream());
+            var response = await client.PostAsync(VoteUrl, content);
+            var responseContent = await response.Content.ReadAsStringAsync();
             Liked = null;
         }
         
